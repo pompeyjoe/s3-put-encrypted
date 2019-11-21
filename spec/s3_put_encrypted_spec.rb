@@ -3,17 +3,40 @@
 require 'aws-sdk-kms'
 require 'aws-sdk-s3'
 
+class S3Adapter
+  def initialize(options = {})
+    kms = Aws::KMS::Client.new(region: options[:region])
+
+    @s3 = Aws::S3::Encryption::Client.new(
+      region: options[:region],
+      kms_key_id: options[:kms_key_id],
+      kms_client: kms
+    )
+  end
+
+  def object_exists?(bucket, key)
+    object = @s3.head_object(
+      bucket: bucket,
+      key: key
+    )
+    true
+  rescue Aws::S3::Errors::NotFound
+    false
+  end
+
+  def put_object(options = {})
+    @s3.put_object(options)
+  end
+end
+
 class S3PutEncrypted
   def put(options = {})
     region = 'ap-southeast-2'
     kms_key_id = '1234abcd-12ab-34cd-56ef-1234567890ab'
 
-    kms = Aws::KMS::Client.new(region: region)
-
-    s3 = Aws::S3::Encryption::Client.new(
+    s3 = S3Adapter.new(
       region: region,
-      kms_key_id: kms_key_id,
-      kms_client: kms
+      kms_key_id: kms_key_id
     )
 
     Dir.glob(options[:file_pattern]).each do |filename|
@@ -26,16 +49,9 @@ class S3PutEncrypted
       basename = File.basename(filename)
       key = ctime.strftime("%Y/%m/%Y-%m-%d-#{basename}")
 
-      begin
-        object = s3.head_object(
-          bucket: options[:bucket],
-          key: key
-        )
-
+      if s3.object_exists?(options[:bucket], key)
         puts "Skipping existing file: #{filename}"
         next
-      rescue Aws::S3::Errors::NotFound
-
       end
 
       s3.put_object(
