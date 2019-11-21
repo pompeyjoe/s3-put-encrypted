@@ -16,7 +16,7 @@ class S3PutEncrypted
       kms_client: kms
     )
 
-    Dir.glob(options[:target_directory]).each do |filename|
+    Dir.glob(options[:file_pattern]).each do |filename|
       if File.directory?(filename)
         puts "Skipping directory #{filename}"
         next
@@ -46,7 +46,7 @@ describe S3PutEncrypted do
   let(:put_options) do
     {
       bucket: bucket,
-      target_directory: target_directory
+      file_pattern: file_pattern
     }
   end
 
@@ -59,17 +59,17 @@ describe S3PutEncrypted do
     ).and_return(s3_client)
   end
 
-  context 'when target_directory contains directories' do
-    let(:target_directory) { './spec/resources/dir' }
-    it 'skips directories' do
+  context 'when file pattern matches directory' do
+    let(:file_pattern) { './spec/resources/dir' }
+    it 'skips put' do
       expect(s3_client).not_to receive(:put_object)
 
       subject.put(put_options)
     end
   end
 
-  context 'when target_directory contains files' do
-    let(:target_directory) { './spec/resources/files/**/*' }
+  context 'when file pattern matches files' do
+    let(:file_pattern) { './spec/resources/files/**/*' }
     it 'puts files to S3' do
       a = File.read('./spec/resources/files/a.txt')
       b = File.read('./spec/resources/files/sub/b.txt')
