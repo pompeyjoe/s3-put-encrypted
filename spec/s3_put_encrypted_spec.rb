@@ -4,10 +4,9 @@ require 'aws-sdk-kms'
 require 'aws-sdk-s3'
 
 class S3PutEncrypted
-  def put
+  def put(options = {})
     region = 'ap-southeast-2'
     kms_key_id = '1234abcd-12ab-34cd-56ef-1234567890ab'
-    target_directory = './spec/resources/dir'
 
     kms = Aws::KMS::Client.new(region: region)
 
@@ -17,13 +16,21 @@ class S3PutEncrypted
       kms_client: kms
     )
 
-    Dir.glob(target_directory).each do |filename|
+    Dir.glob(options[:target_directory]).each do |filename|
       if File.directory?(filename)
         puts "Skipping directory #{filename}"
         next
       end
 
-      s3.put_object
+      ctime = File.ctime(filename)
+      basename = File.basename(filename)
+      key = ctime.strftime("%Y/%m/%Y-%m-%d-#{basename}")
+
+      s3.put_object(
+        bucket: options[:bucket],
+        key: key,
+        body: File.read(filename)
+      )
     end
   end
 end
@@ -34,8 +41,14 @@ describe S3PutEncrypted do
   let(:kms_key_id) { '1234abcd-12ab-34cd-56ef-1234567890ab' }
   let(:etag) { '6805f2cfc46c0f04559748bb039d69ae' }
   let(:region) { 'ap-southeast-2' }
-  let(:target_directory) { './dir' }
+  let(:bucket) { 'my-bucket' }
   let(:put_object_response) { Aws::S3::Types::PutObjectOutput.new(etag: etag) }
+  let(:put_options) do
+    {
+      bucket: bucket,
+      target_directory: target_directory
+    }
+  end
 
   before(:each) do
     expect(Aws::KMS::Client).to receive(:new).with(region: region).and_return(kms_client)
@@ -46,11 +59,33 @@ describe S3PutEncrypted do
     ).and_return(s3_client)
   end
 
-  context 'when file array contains directories' do
+  context 'when target_directory contains directories' do
+    let(:target_directory) { './spec/resources/dir' }
     it 'skips directories' do
       expect(s3_client).not_to receive(:put_object)
 
-      subject.put
+      subject.put(put_options)
+    end
+  end
+
+  context 'when target_directory contains files' do
+    let(:target_directory) { './spec/resources/files/**/*' }
+    it 'puts files to S3' do
+      a = File.read('./spec/resources/files/a.txt')
+      b = File.read('./spec/resources/files/sub/b.txt')
+      expect(s3_client).to receive(:put_object).with(
+        bucket: bucket,
+        key: '2019/11/2019-11-21-a.txt',
+        body: a
+      ).and_return(put_object_response)
+
+      expect(s3_client).to receive(:put_object).with(
+        bucket: bucket,
+        key: '2019/11/2019-11-21-b.txt',
+        body: b
+      ).and_return(put_object_response)
+
+      subject.put(put_options)
     end
   end
 end
