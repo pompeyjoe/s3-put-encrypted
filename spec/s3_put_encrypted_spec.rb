@@ -26,6 +26,18 @@ class S3PutEncrypted
       basename = File.basename(filename)
       key = ctime.strftime("%Y/%m/%Y-%m-%d-#{basename}")
 
+      begin
+        object = s3.head_object(
+          bucket: options[:bucket],
+          key: key
+        )
+
+        puts "Skipping existing file: #{filename}"
+        next
+      rescue Aws::S3::Errors::NotFound
+
+      end
+
       s3.put_object(
         bucket: options[:bucket],
         key: key,
@@ -73,17 +85,39 @@ describe S3PutEncrypted do
     it 'puts files to S3' do
       a = File.read('./spec/resources/files/a.txt')
       b = File.read('./spec/resources/files/sub/b.txt')
+
+      expect(s3_client).to receive(:head_object).with(
+        bucket: bucket,
+        key: '2019/11/2019-11-21-a.txt'
+      ).and_raise(Aws::S3::Errors::NotFound.new({}, 'dummy'))
+
       expect(s3_client).to receive(:put_object).with(
         bucket: bucket,
         key: '2019/11/2019-11-21-a.txt',
         body: a
       ).and_return(put_object_response)
 
+      expect(s3_client).to receive(:head_object).with(
+        bucket: bucket,
+        key: '2019/11/2019-11-21-b.txt'
+      ).and_raise(Aws::S3::Errors::NotFound.new({}, 'dummy'))
+
       expect(s3_client).to receive(:put_object).with(
         bucket: bucket,
         key: '2019/11/2019-11-21-b.txt',
         body: b
       ).and_return(put_object_response)
+
+      subject.put(put_options)
+    end
+  end
+
+  context 'when file already exists' do
+    let(:file_pattern) { './spec/resources/files/a.txt' }
+    it 'skips put' do
+
+      expect(s3_client).to receive(:head_object).with(bucket: bucket, key: '2019/11/2019-11-21-a.txt').and_return(Aws::S3::Types::HeadObjectOutput.new)
+      expect(s3_client).not_to receive(:put_object)
 
       subject.put(put_options)
     end
