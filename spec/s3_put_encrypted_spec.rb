@@ -3,6 +3,14 @@
 require 'aws-sdk-kms'
 require 'aws-sdk-s3'
 
+class KeyGenerator
+  def self.generate(filename)
+    ctime = File.ctime(filename)
+    basename = File.basename(filename)
+    ctime.strftime("%Y/%m/%Y-%m-%d-#{basename}")
+  end
+end
+
 class S3Adapter
   def initialize(options = {})
     kms = Aws::KMS::Client.new(region: options[:region])
@@ -45,9 +53,7 @@ class S3PutEncrypted
         next
       end
 
-      ctime = File.ctime(filename)
-      basename = File.basename(filename)
-      key = ctime.strftime("%Y/%m/%Y-%m-%d-#{basename}")
+      key = KeyGenerator.generate(filename)
 
       if s3.object_exists?(options[:bucket], key)
         puts "Skipping existing file: #{filename}"
