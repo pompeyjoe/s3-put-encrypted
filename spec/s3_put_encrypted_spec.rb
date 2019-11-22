@@ -50,7 +50,7 @@ describe S3Putter do
       expect(s3_client).to receive(:head_object).with(
         bucket: bucket,
         key: '2019/11/2019-11-21-a.txt'
-      ).and_raise(Aws::S3::Errors::NotFound.new({}, 'dummy'))
+      ).and_raise(not_found_error)
 
       expect(s3_client).to receive(:put_object).with(
         bucket: bucket,
@@ -61,7 +61,7 @@ describe S3Putter do
       expect(s3_client).to receive(:head_object).with(
         bucket: bucket,
         key: '2019/11/2019-11-21-b.txt'
-      ).and_raise(Aws::S3::Errors::NotFound.new({}, 'dummy'))
+      ).and_raise(not_found_error)
 
       expect(s3_client).to receive(:put_object).with(
         bucket: bucket,
