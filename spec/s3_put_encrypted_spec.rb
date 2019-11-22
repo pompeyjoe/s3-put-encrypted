@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
+require 'securerandom'
 require_relative '../lib/s3_putter'
 
 describe S3Putter do
   let(:kms_client) { instance_double('Aws::KMS::Client') }
   let(:s3_client) { instance_double('Aws::S3::Encryption::Client') }
   let(:kms_key_id) { '1234abcd-12ab-34cd-56ef-1234567890ab' }
-  let(:etag) { '6805f2cfc46c0f04559748bb039d69ae' }
+  let(:etag) { SecureRandom.hex }
   let(:region) { 'ap-southeast-2' }
   let(:bucket) { 'my-bucket' }
   let(:put_object_response) { Aws::S3::Types::PutObjectOutput.new(etag: etag) }
