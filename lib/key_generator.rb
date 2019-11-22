@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# Given a filename generates an S3 key
 class KeyGenerator
   def self.generate(filename)
     ctime = File.ctime(filename)

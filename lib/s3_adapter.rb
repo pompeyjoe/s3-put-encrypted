@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 require 'aws-sdk-kms'
 require 'aws-sdk-s3'
 
+# Wrapper around S3 Client
 class S3Adapter
   def initialize(options = {})
     kms = Aws::KMS::Client.new(region: options[:region])
@@ -13,7 +16,7 @@ class S3Adapter
   end
 
   def object_exists?(bucket, key)
-    object = @s3.head_object(
+    @s3.head_object(
       bucket: bucket,
       key: key
     )

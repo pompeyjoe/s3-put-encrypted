@@ -76,8 +76,10 @@ describe S3Putter do
   context 'when file already exists' do
     let(:file_pattern) { './spec/resources/files/a.txt' }
     it 'skips put' do
-
-      expect(s3_client).to receive(:head_object).with(bucket: bucket, key: '2019/11/2019-11-21-a.txt').and_return(Aws::S3::Types::HeadObjectOutput.new)
+      expect(s3_client).to receive(:head_object).with(
+        bucket: bucket,
+        key: '2019/11/2019-11-21-a.txt'
+      ).and_return(Aws::S3::Types::HeadObjectOutput.new)
       expect(s3_client).not_to receive(:put_object)
 
       subject.put(file_pattern)

@@ -1,6 +1,10 @@
+# frozen_string_literal: true
+
 require_relative 's3_adapter'
 require_relative 'key_generator'
 
+# Puts local files that match the provided 'pattern' to given S3 bucket,
+# encrypted client-side using the KMS CMK with the specified key ID
 class S3Putter
   def initialize(options = {})
     @s3 = S3Adapter.new(
@@ -16,7 +20,7 @@ class S3Putter
 
     Dir.glob(file_pattern).each { |f| put_file(f) }
 
-    puts "Done!"
+    puts 'Done!'
   end
 
   private
@@ -34,7 +38,7 @@ class S3Putter
       return
     end
 
-    "Putting #{filename}..."
+    puts "Putting #{filename}..."
 
     resp = @s3.put_object(
       bucket: @bucket,
