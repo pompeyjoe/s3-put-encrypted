@@ -9,7 +9,7 @@ OptionParser.new do |opts|
     options[:region] = r
   end
 
-  opts.on("-k", "--kms-key-id KMS_KEY_ID", "KMS Key ID") do |k|
+  opts.on("-k", "--kms-key-id KMS_KEY_ID", "Key ID of KMS CMK") do |k|
     options[:kms_key_id] = k
   end
 
